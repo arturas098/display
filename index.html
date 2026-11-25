@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nothing to display</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --ink:#e8ecff; --dim:#8f97c9; --glow:#9fb4ff; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#03040b; color:var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+  canvas { position:fixed; inset:0; display:block; }
+
+  /* nebula clouds */
+  .nebula { position:fixed; border-radius:50%; filter:blur(90px); opacity:.45; pointer-events:none;
+    animation: drift 40s ease-in-out infinite alternate; }
+  .n1 { width:60vmax; height:60vmax; left:-15vmax; top:-20vmax;
+    background:radial-gradient(circle, #4b2a9e 0%, transparent 65%); }
+  .n2 { width:55vmax; height:55vmax; right:-20vmax; bottom:-25vmax;
+    background:radial-gradient(circle, #0f5d8f 0%, transparent 65%); animation-duration:55s; }
+  .n3 { width:35vmax; height:35vmax; left:45%; top:55%;
+    background:radial-gradient(circle, #8a2d6b 0%, transparent 65%); opacity:.25; animation-duration:70s; }
+  @keyframes drift { to { transform: translate(6vmax,-4vmax) scale(1.12); } }
+
+  /* floating centre piece */
+  main { position:relative; z-index:2; height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; padding:2rem; }
+  .float { animation: bob 9s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform:translateY(0) rotate(-.6deg);} 50% { transform:translateY(-18px) rotate(.6deg);} }
+
+  .orbit { position:relative; width:170px; height:170px; margin:0 auto 2.4rem; }
+  .planet { position:absolute; inset:38px; border-radius:50%;
+    background: radial-gradient(circle at 32% 30%, #c9d4ff 0%, #6c7fd6 28%, #2a2f6e 62%, #0b0d24 100%);
+    box-shadow: 0 0 60px #5468ff55, inset -14px -18px 30px #00000088; }
+  .ring { position:absolute; inset:0; border-radius:50%; border:1px solid #9fb4ff33;
+    transform: rotateX(72deg) rotateZ(-18deg); }
+  .ring::before { content:""; position:absolute; inset:-14px; border-radius:50%; border:1px dashed #9fb4ff22; }
+  .moon { position:absolute; width:12px; height:12px; border-radius:50%; top:50%; left:50%;
+    margin:-6px; background:#f3e9ff; box-shadow:0 0 14px #fff;
+    animation: orbit 12s linear infinite; }
+  @keyframes orbit { from { transform: rotate(0) translateX(84px) rotate(0);} to { transform: rotate(360deg) translateX(84px) rotate(-360deg);} }
+
+  h1 { font-weight:200; font-size:clamp(2rem, 6vw, 3.8rem); letter-spacing:.18em; text-transform:uppercase;
+    text-shadow: 0 0 24px var(--glow), 0 0 60px #5468ff66; }
+  p { margin-top:1.1rem; color:var(--dim); font-size:clamp(.9rem, 2.2vw, 1.05rem); letter-spacing:.08em; font-weight:300; }
+  .tag { margin-top:2.6rem; font-size:.72rem; letter-spacing:.35em; text-transform:uppercase; color:#5b6296;
+    animation: pulse 4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity:.35; } }
+
+  @media (prefers-reduced-motion: reduce) { *,*::before { animation:none !important; } }
+</style>
+</head>
+<body>
+  <div class="nebula n1"></div><div class="nebula n2"></div><div class="nebula n3"></div>
+  <canvas id="sky"></canvas>
+
+  <main>
+    <div class="float">
+      <div class="orbit"><div class="ring"></div><div class="planet"></div><div class="moon"></div></div>
+      <h1>Nothing to display</h1>
+      <p>This space is empty for now — the stars are just passing through.</p>
+      <div class="tag">· showcase standby ·</div>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const c = document.getElementById('sky'), x = c.getContext('2d');
+  let w, h, stars = [], shooters = [], mx = 0, my = 0;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    w = innerWidth; h = innerHeight;
+    c.width = w * dpr; c.height = h * dpr; c.style.width = w + 'px'; c.style.height = h + 'px';
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(w * h / 2600);
+    stars = Array.from({length:n}, () => ({
+      x: Math.random() * w, y: Math.random() * h,
+      z: Math.random() * .9 + .1,               // depth → size, speed, parallax
+      t: Math.random() * Math.PI * 2,           // twinkle phase
+      hue: Math.random() < .15 ? (Math.random() < .5 ? 210 : 280) : 0
+    }));
+  }
+
+  addEventListener('resize', resize);
+  addEventListener('pointermove', e => { mx = e.clientX / w - .5; my = e.clientY / h - .5; });
+  resize();
+
+  function frame() {
+    x.clearRect(0, 0, w, h);
+    for (const s of stars) {
+      s.y -= s.z * .12;                          // slow upward float
+      s.x += s.z * .04;
+      if (s.y < -2) { s.y = h + 2; s.x = Math.random() * w; }
+      if (s.x > w + 2) s.x = -2;
+      s.t += .02 * s.z;
+      const a = .35 + .65 * Math.abs(Math.sin(s.t));
+      const px = s.x + mx * 30 * s.z, py = s.y + my * 30 * s.z;
+      x.beginPath();
+      x.fillStyle = s.hue ? `hsla(${s.hue},90%,80%,${a})` : `rgba(235,240,255,${a})`;
+      x.arc(px, py, s.z * 1.4, 0, 6.283);
+      x.fill();
+    }
+    if (Math.random() < .004) shooters.push({x: Math.random()*w, y: Math.random()*h*.5, l: 1});
+    shooters = shooters.filter(s => (s.l -= .015) > 0);
+    for (const s of shooters) {
+      s.x += 9; s.y += 4;
+      const g = x.createLinearGradient(s.x, s.y, s.x - 90, s.y - 40);
+      g.addColorStop(0, `rgba(255,255,255,${s.l})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+      x.strokeStyle = g; x.lineWidth = 1.2;
+      x.beginPath(); x.moveTo(s.x, s.y); x.lineTo(s.x - 90, s.y - 40); x.stroke();
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+</body>
+</html>
